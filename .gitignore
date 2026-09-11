@@ -1,0 +1,22 @@
+# Binaries and build output
+printpilot
+printpilot.exe
+dist/
+
+# Runtime state (pins, alert dedup) — machine-local
+printer-pins.json
+alerts-state.json
+state.json
+config.json
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/
+*.swp
+
+# Security-scan session artifacts
+.mimosa/

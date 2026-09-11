@@ -1,0 +1,31 @@
+{
+  "port": 8787,
+  "printers": [
+    {
+      "id": "x1c",
+      "type": "bambu",
+      "name": "Bambu X1 Carbon",
+      "host": "192.168.1.42",
+      "serial": "00M09A930012345",
+      "access_code": "12345678",
+      "webcam_url": "http://192.168.1.42:8080/?action=stream"
+    },
+    {
+      "id": "voron",
+      "type": "moonraker",
+      "name": "Voron 2.4",
+      "host": "192.168.1.51",
+      "webcam_url": "http://192.168.1.51/webcam/?action=stream"
+    }
+  ],
+  "alerts": {
+    "telegram": {
+      "bot_token": "123456:ABC-DEF_your_botfather_token",
+      "chat_id": "-100123456789"
+    },
+    "webhook": {
+      "url": ""
+    },
+    "events": ["failed", "finished"]
+  }
+}

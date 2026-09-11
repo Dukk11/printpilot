@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>PrintPilot — local printer fleet dashboard</title>
+  <link rel="icon" href="/static/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M6 9V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v5"/>
+        <rect x="3" y="9" width="18" height="8" rx="2"/>
+        <path d="M7 17v3a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-3"/>
+        <circle cx="17" cy="13" r="0.5" fill="currentColor"/>
+      </svg>
+      <div>
+        <h1>PrintPilot</h1>
+        <p class="tagline">local fleet dashboard · no cloud · no docker</p>
+      </div>
+    </div>
+    <div class="top-stats" aria-live="polite">
+      {{ if .Demo }}<span class="badge-demo">demo fleet</span>{{ end }}
+      <span class="stat"><span class="stat-num">{{ .Printing }}</span> printing</span>
+      <span class="stat-dot" aria-hidden="true"></span>
+      <span class="stat"><span class="stat-num">{{ .Online }}</span> online</span>
+    </div>
+  </header>
+
+  <main>
+    <div id="grid" class="grid">
+      {{ template "cards" . }}
+    </div>
+    <noscript><p class="noscript">Live polling needs JavaScript — refresh this page for fresh data.</p></noscript>
+  </main>
+
+  <footer>
+    <span>PrintPilot {{ .Version }}</span>
+    <span aria-hidden="true">·</span>
+    <span>runs on your machine, talks only to your printers</span>
+    <span aria-hidden="true">·</span>
+    <a href="https://github.com/Dukk11/printpilot" rel="noopener">docs &amp; source</a>
+  </footer>
+
+  <script src="/static/app.js" defer></script>
+</body>
+</html>

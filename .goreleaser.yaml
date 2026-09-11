@@ -1,0 +1,52 @@
+version: 2
+
+project_name: printpilot
+
+builds:
+  - id: printpilot
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    goarm:
+      - "7"
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
+    ignore:
+      # windows/arm64 is fine to skip for now
+      - goos: windows
+        goarch: arm64
+
+archives:
+  - id: default
+    formats: [tar.gz]
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^chore:"
+      - "^test:"
+
+release:
+  header: |
+    ## PrintPilot {{ .Tag }}
+
+    Download the archive for your platform, extract it, edit `config.json`,
+    run the binary. Demo fleet: `printpilot --mock`.
+  footer: |
+    **Verify the checksums:** `sha256sum -c checksums.txt`

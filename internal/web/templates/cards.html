@@ -1,0 +1,63 @@
+{{ define "cards" }}
+{{ range .Printers }}
+<article class="card st-{{ .State }}">
+  <header class="card-head">
+    <div class="card-title">
+      <h2>{{ .Name }}</h2>
+      <span class="type-chip">{{ if eq .Type "bambu" }}Bambu Lab{{ else if eq .Type "moonraker" }}Klipper{{ else }}{{ .Type }}{{ end }}</span>
+    </div>
+    <span class="pill pill-{{ .State }}">{{ .State }}</span>
+  </header>
+
+  {{ if .JobName }}
+    <p class="job" title="{{ .JobName }}">{{ .JobName }}</p>
+  {{ else if eq .State "offline" }}
+    <p class="job job-muted">no connection</p>
+  {{ else }}
+    <p class="job job-muted">no active job</p>
+  {{ end }}
+
+  {{ if .Detail }}
+    <p class="detail">{{ .Detail }}</p>
+  {{ end }}
+
+  <div class="progress" role="progressbar" aria-valuenow="{{ pct .Progress }}" aria-valuemin="0" aria-valuemax="100" aria-label="print progress">
+    <div class="progress-fill" style="width: {{ pct .Progress }}%"></div>
+  </div>
+  <div class="meta-row">
+    <span class="pct">{{ pct .Progress }}%</span>
+    {{ if .RemainingMin }}<span class="remaining">~{{ remaining .RemainingMin }} left</span>{{ end }}
+  </div>
+
+  {{ if or .NozzleTemp .BedTemp }}
+  <dl class="temps">
+    <div class="temp">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 2v8"/><path d="m4.93 10.93 1.41 1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41 1.41"/><path d="M22 22H2"/><path d="M16 6l-4 4-4-4"/><path d="M16 18a4 4 0 0 0-8 0"/></svg>
+      <dt>Nozzle</dt><dd>{{ printf "%.0f" .NozzleTemp }}°C</dd>
+    </div>
+    <div class="temp">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="2" y="8" width="20" height="8" rx="2"/><path d="M6 12h.01"/><path d="M10 12h.01"/></svg>
+      <dt>Bed</dt><dd>{{ printf "%.0f" .BedTemp }}°C</dd>
+    </div>
+    {{ if .TotalLayers }}
+    <div class="temp">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 2 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/></svg>
+      <dt>Layer</dt><dd>{{ .Layer }}/{{ .TotalLayers }}</dd>
+    </div>
+    {{ end }}
+  </dl>
+  {{ end }}
+
+  {{ with (cam .) }}
+  <img class="cam" src="{{ . }}" alt="Webcam of {{ $.Name }}" loading="lazy">
+  {{ end }}
+
+</article>
+{{ else }}
+<article class="card empty">
+  <h2>No printers configured</h2>
+  <p>Create a <code>config.json</code> next to the binary (see <code>config.example.json</code>)
+  or start the built-in demo fleet with <code>printpilot --mock</code>.</p>
+</article>
+{{ end }}
+{{ end }}
