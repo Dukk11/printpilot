@@ -30,6 +30,27 @@ func (r *recordingNotifier) Send(_ context.Context, m Message) error {
 	return nil
 }
 
+// snapshot returns a locked copy of the delivered messages so assertions
+// never race with the async delivery goroutines.
+func (r *recordingNotifier) snapshot() []Message {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return append([]Message(nil), r.got...)
+}
+
+// waitFor polls until cond is true or the timeout elapses, with proper
+// synchronization (sleeping alone is not a memory barrier).
+func waitFor(t *testing.T, cond func() bool) {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		if cond() {
+			return
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+}
+
 func newTestManager(notifiers ...Notifier) *Manager {
 	m := New(nil, "") // nil cfg: no built-in notifiers, dedup in memory
 	m.notifiers = notifiers
@@ -40,8 +61,8 @@ func TestFirstObservationNeverAlerts(t *testing.T) {
 	n := &recordingNotifier{}
 	m := newTestManager(n)
 	m.Observe(printer.Status{}, false, printer.Status{ID: "a", State: printer.StateFinished})
-	if len(n.got) != 0 {
-		t.Fatalf("first observation alerted: %+v", n.got)
+	if got := n.snapshot(); len(got) != 0 {
+		t.Fatalf("first observation alerted: %+v", got)
 	}
 }
 
@@ -51,12 +72,13 @@ func TestFinishedAlertFiresOnce(t *testing.T) {
 	m.Observe(printer.Status{State: printer.StateRunning}, true, printer.Status{ID: "a", State: printer.StateFinished, JobName: "benchy"})
 	m.Observe(printer.Status{State: printer.StateFinished}, true, printer.Status{ID: "a", State: printer.StateFinished, JobName: "benchy"})
 	m.Observe(printer.Status{State: printer.StateRunning}, true, printer.Status{ID: "a", State: printer.StateFinished, JobName: "benchy"})
-	time.Sleep(50 * time.Millisecond) // delivery is async
-	if len(n.got) != 1 {
-		t.Fatalf("got %d alerts, want exactly 1 (dedup)", len(n.got))
+	waitFor(t, func() bool { return len(n.snapshot()) == 1 })
+	got := n.snapshot()
+	if len(got) != 1 {
+		t.Fatalf("got %d alerts, want exactly 1 (dedup)", len(got))
 	}
-	if n.got[0].Event != "finished" || n.got[0].Job != "benchy" {
-		t.Errorf("alert = %+v", n.got[0])
+	if got[0].Event != "finished" || got[0].Job != "benchy" {
+		t.Errorf("alert = %+v", got[0])
 	}
 }
 
@@ -65,9 +87,10 @@ func TestFailedAndFinishedAreSeparate(t *testing.T) {
 	m := newTestManager(n)
 	m.Observe(printer.Status{State: printer.StateRunning}, true, printer.Status{ID: "a", State: printer.StateFailed, JobName: "x"})
 	m.Observe(printer.Status{State: printer.StateFailed}, true, printer.Status{ID: "a", State: printer.StateFinished, JobName: "x"})
-	time.Sleep(50 * time.Millisecond) // delivery is async
-	if len(n.got) != 2 {
-		t.Fatalf("got %d alerts, want 2", len(n.got))
+	waitFor(t, func() bool { return len(n.snapshot()) == 2 }) // delivery is async
+	got := n.snapshot()
+	if len(got) != 2 {
+		t.Fatalf("got %d alerts, want 2", len(got))
 	}
 }
 
@@ -76,13 +99,14 @@ func TestEventFilter(t *testing.T) {
 	m := newTestManager(n)
 	m.events = map[string]bool{"failed": true}
 	m.Observe(printer.Status{State: printer.StateRunning}, true, printer.Status{ID: "a", State: printer.StateFinished, JobName: "x"})
-	if len(n.got) != 0 {
-		t.Fatalf("finished must be filtered, got %+v", n.got)
+	// The filtered event never dispatches, so nothing can have been sent.
+	if got := n.snapshot(); len(got) != 0 {
+		t.Fatalf("finished must be filtered, got %+v", got)
 	}
 	m.Observe(printer.Status{State: printer.StateRunning}, true, printer.Status{ID: "a", State: printer.StateFailed, JobName: "x"})
-	time.Sleep(10 * time.Millisecond)
-	if len(n.got) != 1 {
-		t.Fatalf("failed must pass the filter, got %d", len(n.got))
+	waitFor(t, func() bool { return len(n.snapshot()) == 1 })
+	if got := n.snapshot(); len(got) != 1 {
+		t.Fatalf("failed must pass the filter, got %d", len(got))
 	}
 }
 
